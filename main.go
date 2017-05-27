@@ -36,6 +36,8 @@ func main() {
 	// Startup done
 
 	test := gs.ShortHash("Bla")
-
 	log.Noteln(test)
+
+	test2, err := gs.ProcessCommand("\\pi\\\\profileid\\1234\\nick\\MakaHost\\userid\\4321\\\\final\\")
+	log.Noteln(test2, err)
 }
