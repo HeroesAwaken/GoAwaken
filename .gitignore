@@ -1,0 +1,6 @@
+*.exe
+GoRevive
+test*
+.vscode*
+debug
+*.zip
