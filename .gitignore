@@ -2,5 +2,5 @@
 GoRevive
 test*
 .vscode*
-debug
+debug*
 *.zip

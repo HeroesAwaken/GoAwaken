@@ -12,19 +12,17 @@ type Command struct {
 	Query   string
 }
 
+// Hash returns the MD5 hash as a hex-string
+func Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
 // ShortHash returns a MD5 hash of "str" reduced to 12 chars.
 func ShortHash(str string) string {
-
-	// Generate md5 hash
-	hash := md5.New()
-	sum := hash.Sum([]byte(str))
-
-	// Convert to Hex and save first 12 characters
-	hexSum := make([]byte, hex.EncodedLen(len(sum)))
-	hex.Encode(hexSum, sum)
-	shortendHexSum := string(hexSum[0:12])
-
-	return shortendHexSum
+	hash := Hash(str)
+	return hash[0:12]
 }
 
 func ProcessCommand(msg string) (*Command, error) {
