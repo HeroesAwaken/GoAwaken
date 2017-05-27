@@ -31,7 +31,7 @@ func main() {
 	}
 
 	log.SetLevel(*logLevel)
-	log.Noteln("Starting up v%s", Version)
+	log.Notef("Starting up v%s\n", Version)
 
 	// Startup done
 
