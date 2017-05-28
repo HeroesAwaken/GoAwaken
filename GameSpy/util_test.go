@@ -37,3 +37,26 @@ func TestProcessCommand(t *testing.T) {
 		t.Errorf("ProcessCommand was incorrect, got: %v, want: %v.", processCommand, testResult1)
 	}
 }
+
+func TestDecodePassword(t *testing.T) {
+	decodePassword, err := GameSpy.DecodePassword("U3VwZXJEdXBlclNlY3JldFBhc3N3b3Jk")
+	if err != nil {
+		t.Errorf("TestDecodePassword was incorrect, got error: %s", err)
+	}
+	if decodePassword != "SuperDuperSecretPassword" {
+		t.Errorf("TestDecodePassword was incorrect, got: %s, want: %s.", decodePassword, "SuperDuperSecretPassword")
+	}
+}
+
+func TestBF2RandomUnsafe(t *testing.T) {
+	rand1 := GameSpy.BF2RandomUnsafe(5)
+	rand2 := GameSpy.BF2RandomUnsafe(5)
+	if rand1 == rand2 {
+		t.Errorf("TestBF2RandomUnsafe was incorrect, got same value twice: %s, %s.", rand1, rand2)
+	}
+
+	if len(rand1) != 5 || len(rand2) != 5 {
+		t.Errorf("TestBF2RandomUnsafe was incorrect, got wrong lenght: %s, %s.", rand1, rand2)
+	}
+
+}
