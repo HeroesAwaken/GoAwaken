@@ -28,6 +28,9 @@ var (
 	DebugFormat   = "\033[34mDEBUG"
 	PanicFormat   = "\033[35mPANIC"
 	FatalFormat   = "\033[35mFATAL"
+	maxFile       = 1
+	maxPackage    = 1
+	maxFunction   = 1
 )
 
 func SetLevel(level string) {
@@ -45,9 +48,16 @@ func SetLevel(level string) {
 	}
 }
 
+func leftPad2Len(s string, padStr string, overallLen int) string {
+	var padCountInt int
+	padCountInt = 1 + ((overallLen - len(s)) / len(padStr))
+	var retStr = strings.Repeat(padStr, padCountInt) + s
+	return retStr[:overallLen+1]
+}
+
 func rightPad2Len(s string, padStr string, overallLen int) string {
 	var padCountInt int
-	padCountInt = 1 + ((overallLen - len(padStr)) / len(padStr))
+	padCountInt = 1 + ((overallLen - len(s)) / len(padStr))
 	var retStr = s + strings.Repeat(padStr, padCountInt)
 	return retStr[:overallLen]
 }
@@ -75,7 +85,16 @@ func prepareLog(raw string) string {
 			}
 		}
 	}
-	v := fmt.Sprintf("%s %s %s:%d %s.%s:   ", rightPad2Len(raw, " ", 13), logTime.Format("2006-01-02 15:04:05.0000"), file, line, packageName, functionName)
+	if len(file) > maxFile {
+		maxFile = len(file)
+	}
+	if len(packageName) > maxPackage {
+		maxPackage = len(packageName)
+	}
+	if len(functionName) > maxFunction {
+		maxFunction = len(functionName)
+	}
+	v := fmt.Sprintf("%s %s %s:%d\t%s.%s ", rightPad2Len(raw, " ", 13), logTime.Format("2006-01-02 15:04:05.0000"), leftPad2Len(file, " ", maxFile), line, leftPad2Len(packageName, " ", maxPackage), rightPad2Len(functionName+":", " ", maxFunction))
 
 	return v
 }
