@@ -8,6 +8,8 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	log "github.com/ReviveNetwork/GoRevive/Log"
 )
 
 const gamespyLetters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ]["
@@ -84,6 +86,7 @@ func ProcessCommand(msg string) (*Command, error) {
 	// TODO:
 	// Should maybe return an emtpy Command struct instead
 	if len(data) < 1 {
+		log.Errorln("Command message invalid")
 		return nil, errors.New("Command message invalid")
 	}
 
