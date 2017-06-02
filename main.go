@@ -63,6 +63,8 @@ func main() {
 			case event.Name == "close":
 				log.Debugln(event)
 				os.Exit(0)
+			default:
+				log.Debugln(event)
 			}
 		}
 	}

@@ -80,7 +80,7 @@ func (socket *Socket) run() {
 				Data: err,
 			}
 		}
-		socket.handleClientEvents(newClient, clientEventSocket)
+		go socket.handleClientEvents(newClient, clientEventSocket)
 
 		socket.Clients = append(socket.Clients, newClient)
 
