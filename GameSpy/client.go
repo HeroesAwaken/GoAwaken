@@ -8,7 +8,7 @@ import (
 	"net"
 	"strings"
 
-	"git.trivago.trv/~mbosse/hamon.git/log"
+	log "github.com/ReviveNetwork/GoRevive/Log"
 )
 
 type Client struct {
@@ -120,6 +120,7 @@ func (client *Client) handleRequest() {
 				client.processCommand(command)
 			}
 
+			// CURRENTLY FOR TESTING
 			// Close the connection when you're done with it.
 			if message == "close" {
 				fmt.Println("CLOSING")
