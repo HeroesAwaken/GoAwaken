@@ -28,7 +28,7 @@ func (socket *Socket) New(name string, port string) (chan SocketEvent, error) {
 
 	socket.name = name
 	socket.port = port
-	socket.eventChan = make(chan SocketEvent)
+	socket.eventChan = make(chan SocketEvent, 1000)
 
 	// Listen for incoming connections.
 	socket.listen, err = net.Listen("tcp", "0.0.0.0:"+socket.port)
@@ -38,7 +38,7 @@ func (socket *Socket) New(name string, port string) (chan SocketEvent, error) {
 	}
 	log.Noteln(socket.name + ": Listening on 0.0.0.0:" + socket.port)
 
-	// Listen vor new connections in a new Goroutine
+	// Accept new connections in a new Goroutine("thread")
 	go socket.run()
 
 	return socket.eventChan, nil
@@ -72,13 +72,37 @@ func (socket *Socket) run() {
 		// Create a new Client and add it to our slice
 		log.Noteln(socket.name + ": A new client connected")
 		newClient := new(Client)
-		newClient.New(socket.name, &conn)
+		clientEventSocket, err := newClient.New(socket.name, &conn)
+		if err != nil {
+			log.Errorf("%s: Creating the new client threw an error.\n%v", socket.name, err)
+			socket.eventChan <- SocketEvent{
+				Name: "error",
+				Data: err,
+			}
+		}
+		socket.handleClientEvents(newClient, clientEventSocket)
+
 		socket.Clients = append(socket.Clients, newClient)
 
 		// Fire newClient event
 		socket.eventChan <- SocketEvent{
 			Name: "newClient",
 			Data: newClient,
+		}
+	}
+}
+
+func (socket *Socket) handleClientEvents(client *Client, eventsChannel chan ClientEvent) {
+	for {
+		select {
+		case event := <-eventsChannel:
+			switch {
+			case event.Name == "command":
+				command := event.Data.(*Command)
+				log.Debugln(command)
+			default:
+				log.Debugln(event)
+			}
 		}
 	}
 }

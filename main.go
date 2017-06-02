@@ -57,11 +57,11 @@ func main() {
 		case event := <-eventsChannel:
 			switch {
 			case event.Name == "newClient":
-				log.Noteln(event)
+				log.Debugln(event)
 			case event.Name == "error":
-				log.Noteln(event)
+				log.Debugln(event)
 			case event.Name == "close":
-				log.Noteln(event)
+				log.Debugln(event)
 				os.Exit(0)
 			}
 		}
