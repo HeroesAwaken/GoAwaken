@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -31,6 +32,7 @@ var (
 	maxFile       = 1
 	maxPackage    = 1
 	maxFunction   = 1
+	maxLine       = 1
 )
 
 func SetLevel(level string) {
@@ -94,7 +96,10 @@ func prepareLog(raw string) string {
 	if len(functionName) > maxFunction {
 		maxFunction = len(functionName)
 	}
-	v := fmt.Sprintf("%s %s %s:%d\t%s.%s ", rightPad2Len(raw, " ", 13), logTime.Format("2006-01-02 15:04:05.0000"), leftPad2Len(file, " ", maxFile), line, leftPad2Len(packageName, " ", maxPackage), rightPad2Len(functionName+":", " ", maxFunction))
+	if len(strconv.Itoa(line)) > maxLine {
+		maxLine = len(strconv.Itoa(line))
+	}
+	v := fmt.Sprintf("%s %s %s:%s %s.%s ", rightPad2Len(raw, " ", 13), logTime.Format("2006-01-02 15:04:05.0000"), leftPad2Len(file, " ", maxFile), rightPad2Len(strconv.Itoa(line), " ", maxLine), leftPad2Len(packageName, " ", maxPackage), rightPad2Len(functionName+":", " ", maxFunction))
 
 	return v
 }

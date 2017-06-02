@@ -87,7 +87,7 @@ func (client *Client) handleRequest() {
 					}
 				} else {
 					// If we receive an EndOfFile, close this function/goroutine
-					log.Notef("%s: Client closing connection.\n%v", client.name, err)
+					log.Notef("%s: Client closing connection.", client.name)
 					client.eventChan <- ClientEvent{
 						Name: "close",
 						Data: client,
@@ -127,7 +127,10 @@ func (client *Client) handleRequest() {
 				client.IsActive = false
 				err = (*client.conn).Close()
 				if err != nil {
-					fmt.Println("Error closing:", err.Error())
+					client.eventChan <- ClientEvent{
+						Name: "error",
+						Data: err,
+					}
 				}
 				break
 			}
