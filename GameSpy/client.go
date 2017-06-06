@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"time"
 
 	log "github.com/ReviveNetwork/GoRevive/Log"
 )
@@ -22,6 +23,7 @@ type Client struct {
 }
 
 type ClientState struct {
+	ServerChallenge string
 	ClientChallenge string
 	ClientResponse  string
 	BattlelogID     int
@@ -36,6 +38,7 @@ type ClientState struct {
 	HasLogin        bool
 	ProfileSent     bool
 	LoggedOut       bool
+	HeartTicker     *time.Ticker
 }
 
 // ClientEvent is the generic struct for events
@@ -63,6 +66,8 @@ func (client *Client) Write(command string) error {
 		log.Notef("%s: Trying to write to inactive client.\n%v", client.name, command)
 		return errors.New("client is not active. Can't send message")
 	}
+
+	log.Debugln("Write message:", command)
 
 	(*client.conn).Write([]byte(command))
 	return nil
@@ -105,13 +110,13 @@ func (client *Client) Close() {
 }
 
 func (client *Client) handleRequest() {
-	var err error
 	client.IsActive = true
 
 	for client.IsActive {
 		// Make a buffer to hold incoming data.
+		buf := make([]byte, 4096) // buffer
 		for {
-			client.recvBuffer, err = client.reader.ReadBytes('\n')
+			n, err := (*client.conn).Read(buf)
 			if err != nil {
 				if err != io.EOF {
 					log.Errorf("%s: Reading from client threw an error.\n%v", client.name, err)
@@ -119,6 +124,8 @@ func (client *Client) handleRequest() {
 						Name: "error",
 						Data: err,
 					}
+					client.IsActive = false
+					return
 				} else {
 					// If we receive an EndOfFile, close this function/goroutine
 					log.Notef("%s: Client closing connection.", client.name)
@@ -132,24 +139,32 @@ func (client *Client) handleRequest() {
 				break
 			}
 
+			client.recvBuffer = append(client.recvBuffer, buf[:n]...)
+
 			message := strings.TrimSpace(string(client.recvBuffer))
+
+			if strings.Index(message, "\\final\\") == -1 {
+				continue
+			}
+
+			log.Debugln("Got message:", message)
 
 			client.eventChan <- ClientEvent{
 				Name: "data",
 				Data: message,
 			}
 
-			if strings.Index(message, "\\final\\") == -1 {
-				continue
-			}
-
-			for _, command := range strings.Split(message, "\\final\\") {
+			commands := strings.Split(message, "\\final\\")
+			for _, command := range commands {
 				if len(command) == 0 {
 					break
 				}
 
 				client.processCommand(command)
 			}
+
+			// Add unprocessed commands back into recvBuffer
+			client.recvBuffer = []byte(commands[(len(commands) - 1)])
 		}
 	}
 
