@@ -17,6 +17,7 @@ type Client struct {
 	eventChan  chan ClientEvent
 	IsActive   bool
 	reader     *bufio.Reader
+	IpAddr     net.Addr
 	State      interface{}
 }
 
@@ -31,6 +32,7 @@ type ClientEvent struct {
 func (client *Client) New(name string, conn *net.Conn) (chan ClientEvent, error) {
 	client.name = name
 	client.conn = conn
+	client.IpAddr = (*client.conn).RemoteAddr()
 	client.eventChan = make(chan ClientEvent, 1000)
 	client.reader = bufio.NewReader(*client.conn)
 
