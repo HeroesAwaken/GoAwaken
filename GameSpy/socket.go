@@ -138,6 +138,8 @@ func (socket *Socket) removeClient(client *Client) error {
 	var indexToRemove = 0
 	var foundClient = false
 
+	log.Debugln("Removing client ", client)
+
 	for i := range socket.Clients {
 		if socket.Clients[i] == client {
 			indexToRemove = i
@@ -150,6 +152,8 @@ func (socket *Socket) removeClient(client *Client) error {
 		return errors.New("could not find client to remove")
 	}
 
+	log.Debugln("Found client as ", indexToRemove)
+
 	if len(socket.Clients) == 1 {
 		// We have only one element, so create a new one
 		socket.Clients = []*Client{}
@@ -161,6 +165,7 @@ func (socket *Socket) removeClient(client *Client) error {
 	socket.Clients[indexToRemove] = socket.Clients[len(socket.Clients)-1]
 	socket.Clients = socket.Clients[:len(socket.Clients)-1]
 
+	log.Debugln("Client removed")
 	return nil
 }
 
@@ -176,7 +181,10 @@ func (socket *Socket) handleClientEvents(client *Client, eventsChannel chan Clie
 						Client: client,
 					},
 				}
-				socket.removeClient(client)
+				err := socket.removeClient(client)
+				if err != nil {
+					log.Errorln("Could not remove client", err)
+				}
 			case strings.Index(event.Name, "command") != -1:
 				socket.eventChan <- SocketEvent{
 					Name: "client." + event.Name,
