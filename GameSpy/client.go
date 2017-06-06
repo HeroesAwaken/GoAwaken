@@ -3,7 +3,6 @@ package GameSpy
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -28,6 +27,7 @@ type ClientEvent struct {
 	Data interface{}
 }
 
+// New creates a new Client and starts up the handling of the connection
 func (client *Client) New(name string, conn *net.Conn) (chan ClientEvent, error) {
 	client.name = name
 	client.conn = conn
@@ -42,11 +42,17 @@ func (client *Client) New(name string, conn *net.Conn) (chan ClientEvent, error)
 func (client *Client) Write(command string) error {
 	if !client.IsActive {
 		log.Notef("%s: Trying to write to inactive client.\n%v", client.name, command)
-		return errors.New("Command message invalid")
+		return errors.New("client is not active. Can't send message")
 	}
 
 	(*client.conn).Write([]byte(command))
 	return nil
+}
+
+// WriteError Handy for informing the user they're a piece of shit.
+func (client *Client) WriteError(code string, message string) error {
+	err := client.Write("\\error\\\\err\\" + code + "\\fatal\\\\errmsg\\" + message + "\\id\\1\\final\\")
+	return err
 }
 
 func (client *Client) processCommand(command string) {
@@ -118,21 +124,6 @@ func (client *Client) handleRequest() {
 				}
 
 				client.processCommand(command)
-			}
-
-			// CURRENTLY FOR TESTING
-			// Close the connection when you're done with it.
-			if message == "close" {
-				fmt.Println("CLOSING")
-				client.IsActive = false
-				err = (*client.conn).Close()
-				if err != nil {
-					client.eventChan <- ClientEvent{
-						Name: "error",
-						Data: err,
-					}
-				}
-				break
 			}
 		}
 	}
