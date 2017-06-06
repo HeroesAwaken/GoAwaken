@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
-
 	"os"
+
+	"fmt"
 
 	gs "github.com/ReviveNetwork/GoRevive/GameSpy"
 	log "github.com/ReviveNetwork/GoRevive/Log"
@@ -22,6 +23,17 @@ var (
 	Version = "0.0.0"
 )
 
+func EncryptDecrypt(input string, key []rune) (output string) {
+	a := []rune(input)
+	for i := 0; i < len(input); i++ {
+		new := string(a[i] ^ key[i%len(key)])
+		fmt.Println([]byte(new))
+		output += new
+	}
+
+	return output
+}
+
 func main() {
 	var (
 		logLevel = flag.String("loglevel", "error", "LogLevel [error|warning|note|debug]")
@@ -36,6 +48,30 @@ func main() {
 	log.Notef("Starting up v%s", Version)
 
 	// Startup done
+
+	// Generate session key
+	var len = len("MakaHost")
+	var nameIndex = 0
+	var session rune
+	runeName := []rune("MakaHost")
+
+	for {
+		len = len - 1
+		if len < 0 {
+			break
+		}
+		fmt.Println("Char: ", runeName[nameIndex])
+		fmt.Println("Index: ", ((runeName[nameIndex]^session)&0xff)%256)
+		fmt.Println("Operator: ", (session >> 8))
+		fmt.Println("Crc: ", gs.CrcLookup[((runeName[nameIndex]^session)&0xff)%256])
+		tmpSession := session >> 8
+		session = gs.CrcLookup[((runeName[nameIndex]^session)&0xff)%256] ^ (tmpSession)
+		fmt.Println("Result:", session)
+
+		nameIndex = nameIndex + 1
+	}
+
+	fmt.Println(session)
 
 	test := gs.ShortHash("Bla")
 	log.Noteln(test)
@@ -68,4 +104,5 @@ func main() {
 			}
 		}
 	}
+
 }

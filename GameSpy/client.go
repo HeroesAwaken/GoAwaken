@@ -18,7 +18,22 @@ type Client struct {
 	IsActive   bool
 	reader     *bufio.Reader
 	IpAddr     net.Addr
-	State      interface{}
+	State      ClientState
+}
+
+type ClientState struct {
+	ClientChallenge string
+	ClientResponse  string
+	BattlelogID     int
+	Username        string
+	PlyName         string
+	PlyEmail        string
+	PlyCountry      string
+	PlyPid          int
+	Confirmed       bool
+	Banned          bool
+	IpAddress       net.Addr
+	HasLogin        bool
 }
 
 // ClientEvent is the generic struct for events
