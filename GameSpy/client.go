@@ -34,6 +34,8 @@ type ClientState struct {
 	Banned          bool
 	IpAddress       net.Addr
 	HasLogin        bool
+	ProfileSent     bool
+	LoggedOut       bool
 }
 
 // ClientEvent is the generic struct for events
@@ -91,6 +93,15 @@ func (client *Client) processCommand(command string) {
 		Name: "command",
 		Data: gsPacket,
 	}
+}
+
+func (client *Client) Close() {
+	log.Notef("%s: Client closing connection.", client.name)
+	client.eventChan <- ClientEvent{
+		Name: "close",
+		Data: client,
+	}
+	client.IsActive = false
 }
 
 func (client *Client) handleRequest() {

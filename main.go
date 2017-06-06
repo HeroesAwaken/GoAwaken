@@ -23,17 +23,6 @@ var (
 	Version = "0.0.0"
 )
 
-func EncryptDecrypt(input string, key []rune) (output string) {
-	a := []rune(input)
-	for i := 0; i < len(input); i++ {
-		new := string(a[i] ^ key[i%len(key)])
-		fmt.Println([]byte(new))
-		output += new
-	}
-
-	return output
-}
-
 func main() {
 	var (
 		logLevel = flag.String("loglevel", "error", "LogLevel [error|warning|note|debug]")
