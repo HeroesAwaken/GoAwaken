@@ -104,9 +104,6 @@ func (client *Client) handleRequest() {
 				break
 			}
 
-			// Send a response back to person contacting us.
-			(*client.conn).Write([]byte("Message received.\n"))
-
 			message := strings.TrimSpace(string(client.recvBuffer))
 
 			client.eventChan <- ClientEvent{
