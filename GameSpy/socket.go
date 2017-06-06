@@ -1,7 +1,9 @@
 package GameSpy
 
 import (
+	"errors"
 	"net"
+	"strings"
 
 	log "github.com/ReviveNetwork/GoRevive/Log"
 )
@@ -15,8 +17,42 @@ type Socket struct {
 	eventChan chan SocketEvent
 }
 
+type EventError struct {
+	Error error
+}
+type EventNewClient struct {
+	Client *Client
+}
+
+type EventClientClose struct {
+	Client *Client
+}
+type EventClientError struct {
+	Client *Client
+	Error  error
+}
+type EventClientCommand struct {
+	Client  *Client
+	Command *Command
+}
+type EventClientData struct {
+	Client *Client
+	Data   string
+}
+
 // SocketEvent is the generic struct for events
 // by this socket
+//
+// Current events:
+//		Name				-> Data-Type
+// 		close 				-> nil
+//		error				-> error
+//		newClient			-> *Client
+//		client.close		-> [0: *client, 1:nil]
+//		client.error		-> [0: *client, error]
+// 		client.command		-> [0: *client, *Command]
+//		client.command.*	-> [0: *client, *Command]
+//		client.data			-> [0: *client, string]
 type SocketEvent struct {
 	Name string
 	Data interface{}
@@ -65,7 +101,9 @@ func (socket *Socket) run() {
 			log.Errorf("%s: A new client connecting threw an error.\n%v", socket.name, err)
 			socket.eventChan <- SocketEvent{
 				Name: "error",
-				Data: err,
+				Data: EventError{
+					Error: err,
+				},
 			}
 		}
 
@@ -77,7 +115,9 @@ func (socket *Socket) run() {
 			log.Errorf("%s: Creating the new client threw an error.\n%v", socket.name, err)
 			socket.eventChan <- SocketEvent{
 				Name: "error",
-				Data: err,
+				Data: EventError{
+					Error: err,
+				},
 			}
 		}
 		go socket.handleClientEvents(newClient, clientEventSocket)
@@ -87,9 +127,41 @@ func (socket *Socket) run() {
 		// Fire newClient event
 		socket.eventChan <- SocketEvent{
 			Name: "newClient",
-			Data: newClient,
+			Data: EventNewClient{
+				Client: newClient,
+			},
 		}
 	}
+}
+
+func (socket *Socket) removeClient(client *Client) error {
+	var indexToRemove = 0
+	var foundClient = false
+
+	for i := range socket.Clients {
+		if socket.Clients[i] == client {
+			indexToRemove = i
+			foundClient = true
+			break
+		}
+	}
+
+	if !foundClient {
+		return errors.New("could not find client to remove")
+	}
+
+	if len(socket.Clients) == 1 {
+		// We have only one element, so create a new one
+		socket.Clients = []*Client{}
+		return nil
+	}
+
+	// Replace our client set to remove with the last client in the array
+	// and then cut the last element of the array
+	socket.Clients[indexToRemove] = socket.Clients[len(socket.Clients)-1]
+	socket.Clients = socket.Clients[:len(socket.Clients)-1]
+
+	return nil
 }
 
 func (socket *Socket) handleClientEvents(client *Client, eventsChannel chan ClientEvent) {
@@ -97,11 +169,41 @@ func (socket *Socket) handleClientEvents(client *Client, eventsChannel chan Clie
 		select {
 		case event := <-eventsChannel:
 			switch {
-			case event.Name == "command":
-				command := event.Data.(*Command)
-				log.Debugln(command)
+			case event.Name == "close":
+				socket.eventChan <- SocketEvent{
+					Name: "client." + event.Name,
+					Data: EventClientClose{
+						Client: client,
+					},
+				}
+				socket.removeClient(client)
+			case strings.Index(event.Name, "command") != -1:
+				socket.eventChan <- SocketEvent{
+					Name: "client." + event.Name,
+					Data: EventClientCommand{
+						Client:  client,
+						Command: event.Data.(*Command),
+					},
+				}
+			case event.Name == "data":
+				socket.eventChan <- SocketEvent{
+					Name: "client." + event.Name,
+					Data: EventClientData{
+						Client: client,
+						Data:   event.Data.(string),
+					},
+				}
+
 			default:
-				log.Debugln(event)
+				var interfaceSlice = make([]interface{}, 2)
+				interfaceSlice[0] = client
+				interfaceSlice[1] = event.Data
+
+				// Send the event down the chain
+				socket.eventChan <- SocketEvent{
+					Name: "client." + event.Name,
+					Data: interfaceSlice,
+				}
 			}
 		}
 	}
