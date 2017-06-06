@@ -124,6 +124,10 @@ func (client *Client) handleRequest() {
 						Name: "error",
 						Data: err,
 					}
+					client.eventChan <- ClientEvent{
+						Name: "close",
+						Data: client,
+					}
 					client.IsActive = false
 					return
 				} else {
