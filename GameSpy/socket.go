@@ -105,7 +105,7 @@ func (socket *Socket) run() {
 					Error: err,
 				},
 			}
-			return
+			continue
 		}
 
 		// Create a new Client and add it to our slice
