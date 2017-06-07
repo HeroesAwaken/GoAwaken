@@ -55,6 +55,7 @@ func (client *Client) New(name string, conn *net.Conn) (chan ClientEvent, error)
 	client.IpAddr = (*client.conn).RemoteAddr()
 	client.eventChan = make(chan ClientEvent, 1000)
 	client.reader = bufio.NewReader(*client.conn)
+	client.IsActive = true
 
 	go client.handleRequest()
 
