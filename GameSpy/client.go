@@ -120,7 +120,7 @@ func (client *Client) handleRequest() {
 			n, err := (*client.conn).Read(buf)
 			if err != nil {
 				if err != io.EOF {
-					log.Notef("%s: Reading from client threw an error.\n%v", client.name, err)
+					log.Debugf("%s: Reading from client threw an error. %v", client.name, err)
 					client.eventChan <- ClientEvent{
 						Name: "error",
 						Data: err,
