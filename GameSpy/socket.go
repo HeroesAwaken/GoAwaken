@@ -141,6 +141,8 @@ func (socket *Socket) removeClient(client *Client) error {
 
 	log.Debugln("Removing client ", client)
 
+	(*client.conn).Close()
+
 	for i := range socket.Clients {
 		if socket.Clients[i] == client {
 			indexToRemove = i
