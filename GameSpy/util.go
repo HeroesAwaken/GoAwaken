@@ -94,9 +94,9 @@ func ProcessCommand(msg string) (*Command, error) {
 	// TODO:
 	// Check if that makes any sense? Kinda just translated from the js-code
 	//		if (data.length < 2) { return out; }
-	if len(data) == 2 {
+	if len(data) == 1 {
 		outCommand.Message["__query"] = data[0]
-		outCommand.Query = data[1]
+		outCommand.Query = data[0]
 		return outCommand, nil
 	}
 
