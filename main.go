@@ -3,8 +3,14 @@ package main
 import (
 	"flag"
 	"os"
+	"os/signal"
+	"runtime"
+	"time"
 
 	"fmt"
+
+	"net/http"
+	_ "net/http/pprof"
 
 	gs "github.com/ReviveNetwork/GoRevive/GameSpy"
 	log "github.com/ReviveNetwork/GoRevive/Log"
@@ -23,11 +29,25 @@ var (
 	Version = "0.0.0"
 )
 
+func printMemory() {
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
+	log.Noteln("Memory stats:")
+	log.Noteln("mem.Alloc", mem.Alloc)
+	log.Noteln("mem.TotalAlloc", mem.TotalAlloc)
+	log.Noteln("mem.HeapAlloc", mem.HeapAlloc)
+	log.Noteln("mem.HeapSys", mem.HeapSys)
+}
+
 func main() {
 	var (
 		logLevel = flag.String("loglevel", "error", "LogLevel [error|warning|note|debug]")
 	)
 	flag.Parse()
+
+	go func() {
+		log.Noteln(http.ListenAndServe("0.0.0.0:6060", nil))
+	}()
 
 	if CompileVersion != "0" {
 		Version = Version + "." + CompileVersion
@@ -35,6 +55,14 @@ func main() {
 
 	log.SetLevel(*logLevel)
 	log.Notef("Starting up v%s", Version)
+
+	memoryTicker := time.NewTicker(time.Second * 10)
+	go func() {
+		for range memoryTicker.C {
+			printMemory()
+		}
+	}()
+	printMemory()
 
 	// Startup done
 
@@ -72,26 +100,36 @@ func main() {
 	log.Noteln(test2, err)
 
 	test3 := new(gs.Socket)
-	eventsChannel, err := test3.New("Testing", "10000")
+	_, err = test3.New("Testing", "10000")
 	if err != nil {
 		log.Errorln(err)
 	}
 
-	for {
-		select {
-		case event := <-eventsChannel:
-			switch {
-			case event.Name == "newClient":
-				log.Debugln(event)
-			case event.Name == "error":
-				log.Debugln(event)
-			case event.Name == "close":
-				log.Debugln(event)
-				os.Exit(0)
-			default:
-				log.Debugln(event)
+	/*
+		for {
+			select {
+			case event := <-eventsChannel:
+				switch {
+				case event.Name == "newClient":
+					log.Debugln(event)
+				case event.Name == "error":
+					log.Debugln(event)
+				case event.Name == "close":
+					log.Debugln(event)
+					os.Exit(0)
+				default:
+					log.Debugln(event)
+				}
 			}
 		}
+
+	*/
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	for sig := range c {
+		log.Noteln("Captured" + sig.String() + ". Shutting down.")
+		os.Exit(0)
 	}
 
 }
