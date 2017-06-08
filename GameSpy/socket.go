@@ -59,7 +59,7 @@ type SocketEvent struct {
 }
 
 // New starts to listen on a new Socket
-func (socket *Socket) New(name string, port string, proto string) (chan SocketEvent, error) {
+func (socket *Socket) New(name string, port string) (chan SocketEvent, error) {
 	var err error
 
 	socket.name = name
@@ -67,7 +67,7 @@ func (socket *Socket) New(name string, port string, proto string) (chan SocketEv
 	socket.eventChan = make(chan SocketEvent, 1000)
 
 	// Listen for incoming connections.
-	socket.listen, err = net.Listen(proto, "0.0.0.0:"+socket.port)
+	socket.listen, err = net.Listen("tcp", "0.0.0.0:"+socket.port)
 	if err != nil {
 		log.Errorf("%s: Listening on 0.0.0.0:%s threw an error.\n%v", socket.name, socket.port, err)
 		return nil, err
