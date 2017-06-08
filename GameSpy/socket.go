@@ -3,7 +3,6 @@ package GameSpy
 import (
 	"errors"
 	"net"
-	"runtime"
 	"strings"
 
 	log "github.com/ReviveNetwork/GoRevive/Log"
@@ -218,11 +217,11 @@ func (socket *Socket) handleClientEvents(client *Client, eventsChannel chan Clie
 					Data: interfaceSlice,
 				}
 			}
-		default:
+			/*default:
 			if !client.IsActive {
 				break
 			}
-			runtime.Gosched()
+			runtime.Gosched()*/
 		}
 	}
 
