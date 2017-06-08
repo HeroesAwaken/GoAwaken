@@ -3,6 +3,7 @@ package GameSpy
 import (
 	"errors"
 	"net"
+	"runtime"
 	"strings"
 
 	log "github.com/ReviveNetwork/GoRevive/Log"
@@ -174,7 +175,7 @@ func (socket *Socket) removeClient(client *Client) error {
 }
 
 func (socket *Socket) handleClientEvents(client *Client, eventsChannel chan ClientEvent) {
-	for {
+	for client.IsActive {
 		select {
 		case event := <-eventsChannel:
 			switch {
@@ -217,6 +218,16 @@ func (socket *Socket) handleClientEvents(client *Client, eventsChannel chan Clie
 					Data: interfaceSlice,
 				}
 			}
+		default:
+			if !client.IsActive {
+				break
+			}
+			runtime.Gosched()
 		}
+	}
+
+	err := socket.removeClient(client)
+	if err != nil {
+		log.Errorln("Could not remove client", err)
 	}
 }

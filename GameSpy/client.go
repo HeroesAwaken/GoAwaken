@@ -53,7 +53,7 @@ func (client *Client) New(name string, conn *net.Conn) (chan ClientEvent, error)
 	client.name = name
 	client.conn = conn
 	client.IpAddr = (*client.conn).RemoteAddr()
-	client.eventChan = make(chan ClientEvent, 1000)
+	client.eventChan = make(chan ClientEvent, 20)
 	client.reader = bufio.NewReader(*client.conn)
 	client.IsActive = true
 
