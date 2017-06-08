@@ -112,65 +112,65 @@ func (client *Client) Close() {
 
 func (client *Client) handleRequest() {
 	client.IsActive = true
+	buf := make([]byte, 1024) // buffer
 
 	for client.IsActive {
-		// Make a buffer to hold incoming data.
-		buf := make([]byte, 4096) // buffer
-		for {
-			n, err := (*client.conn).Read(buf)
-			if err != nil {
-				if err != io.EOF {
-					log.Debugf("%s: Reading from client threw an error. %v", client.name, err)
-					client.eventChan <- ClientEvent{
-						Name: "error",
-						Data: err,
-					}
-					client.eventChan <- ClientEvent{
-						Name: "close",
-						Data: client,
-					}
-					client.IsActive = false
-					return
-				} else {
-					// If we receive an EndOfFile, close this function/goroutine
-					log.Notef("%s: Client closing connection.", client.name)
-					client.eventChan <- ClientEvent{
-						Name: "close",
-						Data: client,
-					}
-					client.IsActive = false
-					return
+		n, err := (*client.conn).Read(buf)
+		if err != nil {
+			if err != io.EOF {
+				log.Debugf("%s: Reading from client threw an error. %v", client.name, err)
+				client.eventChan <- ClientEvent{
+					Name: "error",
+					Data: err,
 				}
-				break
+				client.eventChan <- ClientEvent{
+					Name: "close",
+					Data: client,
+				}
+				client.IsActive = false
+				return
 			}
+			// If we receive an EndOfFile, close this function/goroutine
+			log.Notef("%s: Client closing connection.", client.name)
+			client.eventChan <- ClientEvent{
+				Name: "close",
+				Data: client,
+			}
+			client.IsActive = false
+			return
 
-			client.recvBuffer = append(client.recvBuffer, buf[:n]...)
+		}
 
-			message := strings.TrimSpace(string(client.recvBuffer))
+		client.recvBuffer = append(client.recvBuffer, buf[:n]...)
 
-			if strings.Index(message, "\\final\\") == -1 {
+		message := strings.TrimSpace(string(client.recvBuffer))
+
+		if strings.Index(message, "\\final\\") == -1 {
+			if len(client.recvBuffer) > 4096 {
+				// We don't support more than 2048 long messages
+				client.recvBuffer = make([]byte, 0)
+			}
+			continue
+		}
+
+		log.Debugln("Got message:", message)
+
+		client.eventChan <- ClientEvent{
+			Name: "data",
+			Data: message,
+		}
+
+		commands := strings.Split(message, "\\final\\")
+		for _, command := range commands {
+			if len(command) == 0 {
 				continue
 			}
 
-			log.Debugln("Got message:", message)
-
-			client.eventChan <- ClientEvent{
-				Name: "data",
-				Data: message,
-			}
-
-			commands := strings.Split(message, "\\final\\")
-			for _, command := range commands {
-				if len(command) == 0 {
-					break
-				}
-
-				client.processCommand(command)
-			}
-
-			// Add unprocessed commands back into recvBuffer
-			client.recvBuffer = []byte(commands[(len(commands) - 1)])
+			client.processCommand(command)
 		}
+
+		// Add unprocessed commands back into recvBuffer
+		client.recvBuffer = []byte(commands[(len(commands) - 1)])
 	}
 
 }
