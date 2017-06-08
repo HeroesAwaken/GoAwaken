@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"math/rand"
+	"net"
 	"strings"
 	"time"
 
@@ -142,4 +143,14 @@ func BF2Random(randomLen int, source rand.Source) string {
 	}
 
 	return string(b)
+}
+
+func Inet_ntoa(ipnr int64) net.IP {
+	var bytes [4]byte
+	bytes[0] = byte(ipnr & 0xFF)
+	bytes[1] = byte((ipnr >> 8) & 0xFF)
+	bytes[2] = byte((ipnr >> 16) & 0xFF)
+	bytes[3] = byte((ipnr >> 24) & 0xFF)
+
+	return net.IPv4(bytes[0], bytes[1], bytes[2], bytes[3])
 }
