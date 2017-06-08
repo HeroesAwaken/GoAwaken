@@ -20,6 +20,34 @@ type InfluxDB struct {
 	batchTicker      *time.Ticker
 }
 
+func (iDB *InfluxDB) Reconnect() error {
+	var err error
+
+	iDB.Flush()
+
+	iDB.client.Close()
+
+	iDB.client, err = client.NewHTTPClient(client.HTTPConfig{
+		Addr:     iDB.influxDBHost,
+		Username: iDB.influxDBUser,
+		Password: iDB.influxDBPassword,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Create a new point batch
+	iDB.batchPoints, err = client.NewBatchPoints(client.BatchPointsConfig{
+		Database:  iDB.influxDBDatabase,
+		Precision: "s",
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // New will create a database connection and return the sql.DB
 func (iDB *InfluxDB) New(influxDBHost string, influxDBDatabase string, influxDBUser string, influxDBPassword string) error {
 	var err error
