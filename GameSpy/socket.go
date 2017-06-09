@@ -225,8 +225,5 @@ func (socket *Socket) handleClientEvents(client *Client, eventsChannel chan Clie
 		}
 	}
 
-	err := socket.removeClient(client)
-	if err != nil {
-		log.Errorln("Could not remove client", err)
-	}
+	socket.removeClient(client)
 }
