@@ -23,8 +23,6 @@ type InfluxDB struct {
 func (iDB *InfluxDB) Reconnect() error {
 	var err error
 
-	iDB.Flush()
-
 	iDB.client.Close()
 
 	iDB.client, err = client.NewHTTPClient(client.HTTPConfig{
