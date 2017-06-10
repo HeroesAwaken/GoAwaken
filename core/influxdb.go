@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"time"
 
+	"os"
+
 	log "github.com/ReviveNetwork/GoRevive/Log"
 	client "github.com/influxdata/influxdb/client/v2"
 )
@@ -85,6 +87,8 @@ func (iDB *InfluxDB) New(influxDBHost string, influxDBDatabase string, influxDBU
 }
 
 func (iDB *InfluxDB) AddMetric(name string, tags map[string]string, fields map[string]interface{}) error {
+	hostname, _ := os.Hostname()
+	tags["hostname"] = hostname
 	pt, err := client.NewPoint(name, tags, fields, time.Now())
 	if err != nil {
 		return err
