@@ -23,6 +23,7 @@ type Client struct {
 }
 
 type ClientState struct {
+	GameName        string
 	ServerChallenge string
 	ClientChallenge string
 	ClientResponse  string
