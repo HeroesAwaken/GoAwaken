@@ -128,7 +128,6 @@ func (client *Client) handleRequest() {
 					Name: "close",
 					Data: client,
 				}
-				client.IsActive = false
 				return
 			}
 			// If we receive an EndOfFile, close this function/goroutine
@@ -137,7 +136,6 @@ func (client *Client) handleRequest() {
 				Name: "close",
 				Data: client,
 			}
-			client.IsActive = false
 			return
 
 		}
