@@ -33,6 +33,7 @@ type ClientState struct {
 	PlyEmail        string
 	PlyCountry      string
 	PlyPid          int
+	Sessionkey      int
 	Confirmed       bool
 	Banned          bool
 	IpAddress       net.Addr
