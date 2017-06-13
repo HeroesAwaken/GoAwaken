@@ -1,6 +1,7 @@
 *.exe
-GoRevive
+GoRevive*
 test*
 .vscode*
 debug*
 *.zip
+*.pem

@@ -145,6 +145,30 @@ func BF2Random(randomLen int, source rand.Source) string {
 	return string(b)
 }
 
+func ProcessFESL(data string) map[string]string {
+	out := make(map[string]string)
+	dataMap := strings.Split(data, "\n")
+
+	for i := 0; i < len(dataMap); i += 1 {
+		objectMap := strings.Split(data, "=")
+		if len(objectMap) != 2 {
+			continue
+		}
+
+		out[objectMap[0]] = objectMap[1]
+	}
+
+	return out
+}
+
+func SerializeFESL(data map[string]string) string {
+	var out string
+	for key, value := range data {
+		out += key + "=" + value + "\n"
+	}
+	return out
+}
+
 func Inet_ntoa(ipnr int64) net.IP {
 	var bytes [4]byte
 	bytes[0] = byte(ipnr & 0xFF)
