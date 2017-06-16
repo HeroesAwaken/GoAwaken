@@ -149,8 +149,8 @@ func ProcessFESL(data string) map[string]string {
 	out := make(map[string]string)
 	dataMap := strings.Split(data, "\n")
 
-	for i := 0; i < len(dataMap); i += 1 {
-		objectMap := strings.Split(data, "=")
+	for i := 0; i < len(dataMap); i++ {
+		objectMap := strings.Split(dataMap[i], "=")
 		if len(objectMap) != 2 {
 			continue
 		}
