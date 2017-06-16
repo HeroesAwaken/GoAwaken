@@ -102,6 +102,11 @@ func (iDB *InfluxDB) Flush() {
 	if err := iDB.client.Write(iDB.batchPoints); err != nil {
 		log.Errorln(err)
 	}
+
+	iDB.batchPoints, _ = client.NewBatchPoints(client.BatchPointsConfig{
+		Database:  iDB.influxDBDatabase,
+		Precision: "s",
+	})
 }
 
 func (iDB *InfluxDB) Stop() {
