@@ -2,7 +2,10 @@ package GameSpy
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -20,6 +23,7 @@ type Client struct {
 	reader     *bufio.Reader
 	IpAddr     net.Addr
 	State      ClientState
+	FESL       bool
 }
 
 type ClientState struct {
@@ -112,6 +116,73 @@ func (client *Client) Close() {
 	client.IsActive = false
 }
 
+func (client *Client) WriteFESL(msgType string, msg map[string]string, msgType2 uint32) error {
+
+	if !client.IsActive {
+		log.Notef("%s: Trying to write to inactive Client.\n%v", client.name, msg)
+		return errors.New("ClientTLS is not active. Can't send message")
+	}
+	var lena int32
+	var buf bytes.Buffer
+
+	payloadEncoded := SerializeFESL(msg)
+	baselen := len(payloadEncoded)
+	lena = int32(baselen + 12)
+
+	buf.Write([]byte(msgType))
+
+	err := binary.Write(&buf, binary.BigEndian, &msgType2)
+	if err != nil {
+		fmt.Println("binary.Write failed:", err)
+	}
+
+	err = binary.Write(&buf, binary.BigEndian, &lena)
+	if err != nil {
+		fmt.Println("binary.Write failed:", err)
+	}
+
+	buf.Write([]byte(payloadEncoded))
+
+	log.Debugln("Write message:", msg, msgType, msgType2)
+
+	n, err := (*client.conn).Write(buf.Bytes())
+	if err != nil {
+		fmt.Println("Writing failed:", n, err)
+	}
+	return nil
+}
+
+func (client *Client) readFESL(data []byte) {
+	outCommand := new(CommandFESL)
+
+	p := bytes.NewBuffer(data)
+	var payloadId uint32
+	var payloadLen uint32
+
+	payloadType := string(data[:4])
+	p.Next(4)
+
+	binary.Read(p, binary.BigEndian, &payloadId)
+	binary.Read(p, binary.BigEndian, &payloadLen)
+
+	payloadRaw := data[12:]
+	payload := ProcessFESL(string(payloadRaw))
+
+	outCommand.Query = payloadType
+	outCommand.PayloadID = payloadId
+	outCommand.Message = payload
+
+	client.eventChan <- ClientEvent{
+		Name: "command." + payloadType,
+		Data: outCommand,
+	}
+	client.eventChan <- ClientEvent{
+		Name: "command",
+		Data: outCommand,
+	}
+
+}
+
 func (client *Client) handleRequest() {
 	client.IsActive = true
 	buf := make([]byte, 1024) // buffer
@@ -141,9 +212,16 @@ func (client *Client) handleRequest() {
 
 		}
 
+		if client.FESL {
+			client.readFESL(buf[:n])
+			continue
+		}
+
 		client.recvBuffer = append(client.recvBuffer, buf[:n]...)
 
 		message := strings.TrimSpace(string(client.recvBuffer))
+
+		log.Debugln("Got message:", message)
 
 		if strings.Index(message, "\\final\\") == -1 {
 			if len(client.recvBuffer) > 4096 {
@@ -152,8 +230,6 @@ func (client *Client) handleRequest() {
 			}
 			continue
 		}
-
-		log.Debugln("Got message:", message)
 
 		client.eventChan <- ClientEvent{
 			Name: "data",

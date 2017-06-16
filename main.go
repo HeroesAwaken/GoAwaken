@@ -63,31 +63,28 @@ func main() {
 
 	CheckAndGenerateHTTPSCertificate(*certFileFlag, *keyFileFlag)
 
-	test3 := new(gs.SocketTLS)
-	_, err := test3.New("Testing", "18270", *certFileFlag, *keyFileFlag)
+	test3 := new(gs.Socket)
+	eventsChannel, err := test3.New("Testing", "42127", false)
 	if err != nil {
 		log.Errorln(err)
 	}
 
-	/*
-		for {
-			select {
-			case event := <-eventsChannel:
-				switch {
-				case event.Name == "newClient":
-					log.Debugln(event)
-				case event.Name == "error":
-					log.Debugln(event)
-				case event.Name == "close":
-					log.Debugln(event)
-					os.Exit(0)
-				default:
-					log.Debugln(event)
-				}
+	for {
+		select {
+		case event := <-eventsChannel:
+			switch {
+			case event.Name == "newClient":
+				log.Debugln(event)
+			case event.Name == "error":
+				log.Debugln(event)
+			case event.Name == "close":
+				log.Debugln(event)
+				os.Exit(0)
+			default:
+				log.Debugln(event)
 			}
 		}
-
-	*/
+	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

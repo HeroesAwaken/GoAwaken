@@ -15,6 +15,7 @@ type Socket struct {
 	port      string
 	listen    net.Listener
 	eventChan chan SocketEvent
+	fesl      bool
 }
 
 type EventError struct {
@@ -34,6 +35,10 @@ type EventClientError struct {
 type EventClientCommand struct {
 	Client  *Client
 	Command *Command
+}
+type EventClientFESLCommand struct {
+	Client  *Client
+	Command *CommandFESL
 }
 type EventClientData struct {
 	Client *Client
@@ -59,12 +64,13 @@ type SocketEvent struct {
 }
 
 // New starts to listen on a new Socket
-func (socket *Socket) New(name string, port string) (chan SocketEvent, error) {
+func (socket *Socket) New(name string, port string, fesl bool) (chan SocketEvent, error) {
 	var err error
 
 	socket.name = name
 	socket.port = port
 	socket.eventChan = make(chan SocketEvent, 1000)
+	socket.fesl = fesl
 
 	// Listen for incoming connections.
 	socket.listen, err = net.Listen("tcp", "0.0.0.0:"+socket.port)
@@ -111,6 +117,9 @@ func (socket *Socket) run() {
 		// Create a new Client and add it to our slice
 		log.Noteln(socket.name + ": A new client connected")
 		newClient := new(Client)
+		if socket.fesl {
+			newClient.FESL = true
+		}
 		clientEventSocket, err := newClient.New(socket.name, &conn)
 		if err != nil {
 			log.Errorf("%s: Creating the new client threw an error.\n%v", socket.name, err)
@@ -190,12 +199,23 @@ func (socket *Socket) handleClientEvents(client *Client, eventsChannel chan Clie
 					log.Errorln("Could not remove client", err)
 				}
 			case strings.Index(event.Name, "command") != -1:
-				socket.eventChan <- SocketEvent{
-					Name: "client." + event.Name,
-					Data: EventClientCommand{
-						Client:  client,
-						Command: event.Data.(*Command),
-					},
+				if socket.fesl {
+					socket.eventChan <- SocketEvent{
+						Name: "client." + event.Name,
+						Data: EventClientFESLCommand{
+							Client:  client,
+							Command: event.Data.(*CommandFESL),
+						},
+					}
+				} else {
+					socket.eventChan <- SocketEvent{
+						Name: "client." + event.Name,
+
+						Data: EventClientCommand{
+							Client:  client,
+							Command: event.Data.(*Command),
+						},
+					}
 				}
 			case event.Name == "data":
 				socket.eventChan <- SocketEvent{
