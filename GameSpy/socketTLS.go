@@ -31,7 +31,7 @@ type EventClientTLSError struct {
 }
 type EventClientTLSCommand struct {
 	Client  *ClientTLS
-	Command *Command
+	Command *CommandFESL
 }
 type EventClientTLSData struct {
 	Client *ClientTLS
@@ -60,7 +60,6 @@ func (socket SocketTLS) New(name string, port string, tlsCert string, tlsKey str
 		//MaxVersion:   tls.VersionSSL30,
 		CipherSuites: []uint16{
 			tls.TLS_RSA_WITH_RC4_128_SHA,
-			0x014,
 		},
 	}
 	socket.listen, err = tls.Listen("tcp", "0.0.0.0:"+socket.port, config)
@@ -117,9 +116,6 @@ func (socket SocketTLS) run() {
 			continue
 		}
 
-		/*state := tlscon.ConnectionState()
-		log.Debugf("Connection handshake complete %v, %v", state.HandshakeComplete, state)
-
 		err = tlscon.Handshake()
 		if err != nil {
 			log.Errorf("%s: A new client connecting threw an error.\n%v", socket.name, err)
@@ -130,7 +126,10 @@ func (socket SocketTLS) run() {
 				},
 			}
 			continue
-		}*/
+		}
+
+		state := tlscon.ConnectionState()
+		log.Debugf("Connection handshake complete %v, %v", state.HandshakeComplete, state)
 
 		// Create a new Client and add it to our slice
 		newClient := new(ClientTLS)
@@ -219,7 +218,7 @@ func (socket SocketTLS) handleClientEvents(client *ClientTLS, eventsChannel chan
 					Name: "client." + event.Name,
 					Data: EventClientTLSCommand{
 						Client:  client,
-						Command: event.Data.(*Command),
+						Command: event.Data.(*CommandFESL),
 					},
 				}
 			case event.Name == "data":

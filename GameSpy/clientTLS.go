@@ -7,12 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"strings"
 	"time"
 
 	"encoding/binary"
-
-	"encoding/hex"
 
 	log "github.com/ReviveNetwork/GoRevive/Log"
 )
@@ -49,6 +46,12 @@ type ClientTLSState struct {
 	HeartTicker        *time.Ticker
 }
 
+type CommandFESL struct {
+	Message   map[string]string
+	Query     string
+	PayloadID uint32
+}
+
 // ClientTLSEvent is the generic struct for events
 // by this ClientTLS
 type ClientTLSEvent struct {
@@ -67,18 +70,6 @@ func (clientTLS *ClientTLS) New(name string, conn *tls.Conn) (chan ClientTLSEven
 	go clientTLS.handleRequest()
 
 	return clientTLS.eventChan, nil
-}
-
-func (clientTLS *ClientTLS) Write(command string) error {
-	if !clientTLS.IsActive {
-		log.Notef("%s: Trying to write to inactive ClientTLS.\n%v", clientTLS.name, command)
-		return errors.New("ClientTLS is not active. Can't send message")
-	}
-
-	log.Debugln("Write message:", command)
-
-	(*clientTLS.conn).Write([]byte(command))
-	return nil
 }
 
 func (clientTLS *ClientTLS) WriteFESL(msgType string, msg map[string]string, msgType2 uint32) error {
@@ -108,13 +99,44 @@ func (clientTLS *ClientTLS) WriteFESL(msgType string, msg map[string]string, msg
 
 	buf.Write([]byte(payloadEncoded))
 
-	log.Debugln("Write message:", hex.EncodeToString(buf.Bytes()))
+	log.Debugln("Write message:", msg, msgType, msgType2)
 
 	n, err := (*clientTLS.conn).Write(buf.Bytes())
 	if err != nil {
 		fmt.Println("Writing failed:", n, err)
 	}
 	return nil
+}
+
+func (clientTLS *ClientTLS) readFESL(data []byte) {
+	outCommand := new(CommandFESL)
+
+	p := bytes.NewBuffer(data)
+	var payloadId uint32
+	var payloadLen uint32
+
+	payloadType := string(data[:4])
+	p.Next(4)
+
+	binary.Read(p, binary.BigEndian, &payloadId)
+	binary.Read(p, binary.BigEndian, &payloadLen)
+
+	payloadRaw := data[12:]
+	payload := ProcessFESL(string(payloadRaw))
+
+	outCommand.Query = payloadType
+	outCommand.PayloadID = payloadId
+	outCommand.Message = payload
+
+	clientTLS.eventChan <- ClientTLSEvent{
+		Name: "command." + payload["TXN"],
+		Data: outCommand,
+	}
+	clientTLS.eventChan <- ClientTLSEvent{
+		Name: "command",
+		Data: outCommand,
+	}
+
 }
 
 func (clientTLS *ClientTLS) Close() {
@@ -126,13 +148,9 @@ func (clientTLS *ClientTLS) Close() {
 	clientTLS.IsActive = false
 }
 
-func (clientTLS *ClientTLS) readFESL(data string) {
-
-}
-
 func (clientTLS *ClientTLS) handleRequest() {
 	clientTLS.IsActive = true
-	buf := make([]byte, 1024) // buffer
+	buf := make([]byte, 4096) // buffer
 
 	for clientTLS.IsActive {
 		n, err := (*clientTLS.conn).Read(buf)
@@ -158,17 +176,7 @@ func (clientTLS *ClientTLS) handleRequest() {
 			return
 
 		}
-
-		clientTLS.recvBuffer = append(clientTLS.recvBuffer, buf[:n]...)
-
-		message := strings.TrimSpace(string(clientTLS.recvBuffer))
-
-		log.Debugln("Got message:", message)
-
-		clientTLS.eventChan <- ClientTLSEvent{
-			Name: "data",
-			Data: message,
-		}
+		clientTLS.readFESL(buf[:n])
 	}
 
 }
