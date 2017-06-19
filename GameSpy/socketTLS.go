@@ -116,18 +116,6 @@ func (socket SocketTLS) run() {
 			continue
 		}
 
-		err = tlscon.Handshake()
-		if err != nil {
-			log.Errorf("%s: A new client connecting threw an error.\n%v", socket.name, err)
-			socket.eventChan <- SocketEvent{
-				Name: "error",
-				Data: EventError{
-					Error: err,
-				},
-			}
-			continue
-		}
-
 		state := tlscon.ConnectionState()
 		log.Debugf("Connection handshake complete %v, %v", state.HandshakeComplete, state)
 

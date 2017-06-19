@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -221,7 +222,7 @@ func (client *Client) handleRequest() {
 
 		message := strings.TrimSpace(string(client.recvBuffer))
 
-		log.Debugln("Got message:", message)
+		log.Debugln("Got message:", hex.EncodeToString(client.recvBuffer))
 
 		if strings.Index(message, "\\final\\") == -1 {
 			if len(client.recvBuffer) > 4096 {

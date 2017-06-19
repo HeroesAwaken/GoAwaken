@@ -1,6 +1,9 @@
 package GameSpy
 
 import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
 	"net"
 	"strings"
 
@@ -14,6 +17,7 @@ type SocketUDP struct {
 	port      string
 	listen    *net.UDPConn
 	eventChan chan SocketUDPEvent
+	fesl      bool
 }
 
 type SocketUDPEvent struct {
@@ -23,12 +27,13 @@ type SocketUDPEvent struct {
 }
 
 // New starts to listen on a new Socket
-func (socket *SocketUDP) New(name string, port string) (chan SocketUDPEvent, error) {
+func (socket *SocketUDP) New(name string, port string, fesl bool) (chan SocketUDPEvent, error) {
 	var err error
 
 	socket.name = name
 	socket.port = port
 	socket.eventChan = make(chan SocketUDPEvent, 1000)
+	socket.fesl = fesl
 
 	// Listen for incoming connections.
 	ServerAddr, err := net.ResolveUDPAddr("udp", "0.0.0.0:"+socket.port)
@@ -62,6 +67,39 @@ func (socket *SocketUDP) Close() {
 
 	// Close socket
 	socket.listen.Close()
+}
+
+func (socket *SocketUDP) readFESL(data []byte, addr *net.UDPAddr) {
+	outCommand := new(CommandFESL)
+
+	p := bytes.NewBuffer(data)
+	var payloadId uint32
+	var payloadLen uint32
+
+	payloadType := string(data[:4])
+	p.Next(4)
+
+	binary.Read(p, binary.BigEndian, &payloadId)
+	binary.Read(p, binary.BigEndian, &payloadLen)
+
+	payloadRaw := data[12:]
+	payload := ProcessFESL(string(payloadRaw))
+
+	outCommand.Query = payloadType
+	outCommand.PayloadID = payloadId
+	outCommand.Message = payload
+
+	socket.eventChan <- SocketUDPEvent{
+		Name: "command." + payloadType,
+		Addr: addr,
+		Data: outCommand,
+	}
+	socket.eventChan <- SocketUDPEvent{
+		Name: "command",
+		Addr: addr,
+		Data: outCommand,
+	}
+
 }
 
 func (socket *SocketUDP) processCommand(command string, addr *net.UDPAddr) {
@@ -103,9 +141,14 @@ func (socket *SocketUDP) run() {
 			continue
 		}
 
+		if socket.fesl {
+			socket.readFESL(buf[:n], addr)
+			continue
+		}
+
 		message := strings.TrimSpace(string(socket.XOr(buf[0:n])))
 
-		log.Debugln("Got message:", message)
+		log.Debugln("Got UDP message:", message)
 
 		socket.eventChan <- SocketUDPEvent{
 			Name: "data",
@@ -115,6 +158,37 @@ func (socket *SocketUDP) run() {
 
 		socket.processCommand(message, addr)
 	}
+}
+
+func (socket *SocketUDP) WriteFESL(msgType string, msg map[string]string, msgType2 uint32, addr *net.UDPAddr) error {
+	var lena int32
+	var buf bytes.Buffer
+
+	payloadEncoded := SerializeFESL(msg)
+	baselen := len(payloadEncoded)
+	lena = int32(baselen + 12)
+
+	buf.Write([]byte(msgType))
+
+	err := binary.Write(&buf, binary.BigEndian, &msgType2)
+	if err != nil {
+		fmt.Println("binary.Write failed:", err)
+	}
+
+	err = binary.Write(&buf, binary.BigEndian, &lena)
+	if err != nil {
+		fmt.Println("binary.Write failed:", err)
+	}
+
+	buf.Write([]byte(payloadEncoded))
+
+	log.Debugln("Write message:", msg, msgType, msgType2)
+
+	n, err := socket.listen.WriteToUDP(buf.Bytes(), addr)
+	if err != nil {
+		fmt.Println("Writing failed:", n, err)
+	}
+	return nil
 }
 
 func (socket *SocketUDP) Write(message string, addr *net.UDPAddr) {

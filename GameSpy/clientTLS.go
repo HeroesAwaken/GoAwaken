@@ -12,6 +12,7 @@ import (
 	"encoding/binary"
 
 	log "github.com/ReviveNetwork/GoRevive/Log"
+	"github.com/ReviveNetwork/GoRevive/core"
 )
 
 type ClientTLS struct {
@@ -21,6 +22,7 @@ type ClientTLS struct {
 	eventChan  chan ClientTLSEvent
 	IsActive   bool
 	IpAddr     net.Addr
+	RedisState *core.RedisState
 	State      ClientTLSState
 	FESL       bool
 }
