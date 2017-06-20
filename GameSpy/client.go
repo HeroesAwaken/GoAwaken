@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"strconv"
+
 	log "github.com/ReviveNetwork/GoRevive/Log"
 )
 
@@ -154,32 +156,46 @@ func (client *Client) WriteFESL(msgType string, msg map[string]string, msgType2 
 }
 
 func (client *Client) readFESL(data []byte) {
-	outCommand := new(CommandFESL)
-
 	p := bytes.NewBuffer(data)
-	var payloadId uint32
-	var payloadLen uint32
+	log.Debugln(hex.EncodeToString(data))
+	i := 0
+	for {
+		outCommand := new(CommandFESL)
 
-	payloadType := string(data[:4])
-	p.Next(4)
+		var payloadId uint32
+		var payloadLen uint32
 
-	binary.Read(p, binary.BigEndian, &payloadId)
-	binary.Read(p, binary.BigEndian, &payloadLen)
+		payloadTypeRaw := make([]byte, 4)
+		_, err := p.Read(payloadTypeRaw)
+		if err != nil {
+			log.Noteln("Finished reading. " + strconv.Itoa(i) + " Packets read.")
+			return
+		}
 
-	payloadRaw := data[12:]
-	payload := ProcessFESL(string(payloadRaw))
+		payloadType := string(payloadTypeRaw)
 
-	outCommand.Query = payloadType
-	outCommand.PayloadID = payloadId
-	outCommand.Message = payload
+		binary.Read(p, binary.BigEndian, &payloadId)
+		binary.Read(p, binary.BigEndian, &payloadLen)
 
-	client.eventChan <- ClientEvent{
-		Name: "command." + payloadType,
-		Data: outCommand,
-	}
-	client.eventChan <- ClientEvent{
-		Name: "command",
-		Data: outCommand,
+		payloadRaw := make([]byte, (payloadLen - 12))
+		p.Read(payloadRaw)
+
+		payload := ProcessFESL(string(payloadRaw))
+
+		outCommand.Query = payloadType
+		outCommand.PayloadID = payloadId
+		outCommand.Message = payload
+
+		client.eventChan <- ClientEvent{
+			Name: "command." + payloadType,
+			Data: outCommand,
+		}
+		client.eventChan <- ClientEvent{
+			Name: "command",
+			Data: outCommand,
+		}
+
+		i++
 	}
 
 }
