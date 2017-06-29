@@ -6,7 +6,7 @@ import (
 	"net"
 	"strings"
 
-	log "github.com/ReviveNetwork/GoRevive/Log"
+	log "github.com/HeroesAwaken/GoAwaken/Log"
 )
 
 // Socket is a basic event-based TCP-Server
@@ -199,7 +199,7 @@ func (socket SocketTLS) handleClientEvents(client *ClientTLS, eventsChannel chan
 				}
 				err := socket.removeClient(client)
 				if err != nil {
-					log.Errorln("Could not remove client", err)
+					//log.Errorln("Could not remove client", err)
 				}
 			case strings.Index(event.Name, "command") != -1:
 				socket.eventChan <- SocketEvent{

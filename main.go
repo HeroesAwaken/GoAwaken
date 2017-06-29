@@ -8,8 +8,8 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	gs "github.com/ReviveNetwork/GoRevive/GameSpy"
-	log "github.com/ReviveNetwork/GoRevive/Log"
+	gs "github.com/HeroesAwaken/GoAwaken/GameSpy"
+	log "github.com/HeroesAwaken/GoAwaken/Log"
 	"github.com/kabukky/httpscerts"
 )
 

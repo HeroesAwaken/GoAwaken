@@ -11,8 +11,8 @@ import (
 
 	"encoding/binary"
 
-	log "github.com/ReviveNetwork/GoRevive/Log"
-	"github.com/ReviveNetwork/GoRevive/core"
+	log "github.com/HeroesAwaken/GoAwaken/Log"
+	"github.com/HeroesAwaken/GoAwaken/core"
 )
 
 type ClientTLS struct {
@@ -111,6 +111,11 @@ func (clientTLS *ClientTLS) WriteFESL(msgType string, msg map[string]string, msg
 }
 
 func (clientTLS *ClientTLS) readFESL(data []byte) {
+
+	if len(data) < 12 {
+		return
+	}
+
 	outCommand := new(CommandFESL)
 
 	p := bytes.NewBuffer(data)

@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	log "github.com/ReviveNetwork/GoRevive/Log"
+	log "github.com/HeroesAwaken/GoAwaken/Log"
 )
 
 // Socket is a basic event-based TCP-Server

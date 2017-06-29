@@ -12,9 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"strconv"
-
-	log "github.com/ReviveNetwork/GoRevive/Log"
+	log "github.com/HeroesAwaken/GoAwaken/Log"
 )
 
 type Client struct {
@@ -168,7 +166,6 @@ func (client *Client) readFESL(data []byte) {
 		payloadTypeRaw := make([]byte, 4)
 		_, err := p.Read(payloadTypeRaw)
 		if err != nil {
-			log.Noteln("Finished reading. " + strconv.Itoa(i) + " Packets read.")
 			return
 		}
 

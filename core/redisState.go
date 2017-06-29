@@ -20,6 +20,11 @@ func (rS *RedisState) Get(key string) string {
 	return stringCmd.Val()
 }
 
+func (rS *RedisState) HKeys() []string {
+	stringSliceCmd := rS.redis.HKeys("redisState:" + rS.identifier)
+	return stringSliceCmd.Val()
+}
+
 func (rS *RedisState) Set(key string, value string) error {
 	statusCmd := rS.redis.HSet("redisState:"+rS.identifier, key, value)
 	return statusCmd.Err()

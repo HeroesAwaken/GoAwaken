@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/ReviveNetwork/GoRevive/Log"
+	log "github.com/HeroesAwaken/GoAwaken/Log"
 )
 
 const gamespyLetters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ]["
@@ -166,7 +166,9 @@ func SerializeFESL(data map[string]string) string {
 	for key, value := range data {
 		out += key + "=" + value + "\n"
 	}
-	return out
+	newOut := out[:len(out)-1]
+	newOut = newOut + string(byte(0x00))
+	return newOut
 }
 
 func Inet_ntoa(ipnr int64) net.IP {

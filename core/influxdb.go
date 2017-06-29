@@ -6,7 +6,7 @@ import (
 
 	"os"
 
-	log "github.com/ReviveNetwork/GoRevive/Log"
+	log "github.com/HeroesAwaken/GoAwaken/Log"
 	client "github.com/influxdata/influxdb/client/v2"
 )
 
