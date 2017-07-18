@@ -39,7 +39,7 @@ type EventClientTLSData struct {
 }
 
 // New starts to listen on a new Socket
-func (socket SocketTLS) New(name string, port string, tlsCert string, tlsKey string) (chan SocketEvent, error) {
+func (socket *SocketTLS) New(name string, port string, tlsCert string, tlsKey string) (chan SocketEvent, error) {
 	var err error
 
 	socket.name = name
@@ -77,7 +77,7 @@ func (socket SocketTLS) New(name string, port string, tlsCert string, tlsKey str
 }
 
 // Close fires a close-event and closes the socket
-func (socket SocketTLS) Close() {
+func (socket *SocketTLS) Close() {
 	// Fire closing event
 	log.Noteln(socket.name + " closing. Port " + socket.port)
 	socket.eventChan <- SocketEvent{
@@ -89,7 +89,7 @@ func (socket SocketTLS) Close() {
 	socket.listen.Close()
 }
 
-func (socket SocketTLS) run() {
+func (socket *SocketTLS) run() {
 	for {
 		// Listen for an incoming connection.
 		conn, err := socket.listen.Accept()
@@ -147,7 +147,7 @@ func (socket SocketTLS) run() {
 	}
 }
 
-func (socket SocketTLS) removeClient(client *ClientTLS) error {
+func (socket *SocketTLS) removeClient(client *ClientTLS) error {
 	var indexToRemove = 0
 	var foundClient = false
 
@@ -185,7 +185,7 @@ func (socket SocketTLS) removeClient(client *ClientTLS) error {
 	return nil
 }
 
-func (socket SocketTLS) handleClientEvents(client *ClientTLS, eventsChannel chan ClientTLSEvent) {
+func (socket *SocketTLS) handleClientEvents(client *ClientTLS, eventsChannel chan ClientTLSEvent) {
 	for client.IsActive {
 		select {
 		case event := <-eventsChannel:
