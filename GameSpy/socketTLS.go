@@ -113,6 +113,7 @@ func (socket *SocketTLS) run() {
 					Error: err,
 				},
 			}
+			conn.Close()
 			continue
 		}
 
@@ -125,6 +126,7 @@ func (socket *SocketTLS) run() {
 					Error: err,
 				},
 			}
+			tlscon.Close()
 			continue
 		}
 
@@ -143,6 +145,7 @@ func (socket *SocketTLS) run() {
 					Error: err,
 				},
 			}
+			tlscon.Close()
 		}
 		go socket.handleClientEvents(newClient, clientEventSocket)
 
