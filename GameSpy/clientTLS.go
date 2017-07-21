@@ -105,7 +105,9 @@ func (clientTLS *ClientTLS) WriteFESL(msgType string, msg map[string]string, msg
 
 	n, err := (*clientTLS.conn).Write(buf.Bytes())
 	if err != nil {
-		fmt.Println("Writing failed:", n, err)
+		log.Errorln("Writing failed:", n, err)
+		clientTLS.Close()
+		return errors.New("Error writing to client. Closing connection")
 	}
 	return nil
 }
@@ -168,22 +170,19 @@ func (clientTLS *ClientTLS) handleRequest() {
 					Name: "error",
 					Data: err,
 				}
-				clientTLS.eventChan <- ClientTLSEvent{
-					Name: "close",
-					Data: clientTLS,
-				}
 				return
 			}
-			// If we receive an EndOfFile, close this function/goroutine
-			log.Notef("%s: ClientTLS closing connection.", clientTLS.name)
-			clientTLS.eventChan <- ClientTLSEvent{
-				Name: "close",
-				Data: clientTLS,
-			}
-			return
 
+			// Close connection
+			return
 		}
 		clientTLS.readFESL(buf[:n])
 	}
 
+	// If we receive an EndOfFile, close this function/goroutine
+	log.Notef("%s: ClientTLS closing connection.", clientTLS.name)
+	clientTLS.eventChan <- ClientTLSEvent{
+		Name: "close",
+		Data: clientTLS,
+	}
 }
