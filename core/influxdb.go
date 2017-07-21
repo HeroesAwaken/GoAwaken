@@ -20,6 +20,8 @@ type InfluxDB struct {
 	batchPoints      client.BatchPoints
 	client           client.Client
 	batchTicker      *time.Ticker
+	appName          string
+	version          string
 }
 
 func (iDB *InfluxDB) Reconnect() error {
@@ -49,13 +51,15 @@ func (iDB *InfluxDB) Reconnect() error {
 }
 
 // New will create a database connection and return the sql.DB
-func (iDB *InfluxDB) New(influxDBHost string, influxDBDatabase string, influxDBUser string, influxDBPassword string) error {
+func (iDB *InfluxDB) New(influxDBHost, influxDBDatabase, influxDBUser, influxDBPassword, appName, version string) error {
 	var err error
 
 	iDB.influxDBHost = influxDBHost
 	iDB.influxDBDatabase = influxDBDatabase
 	iDB.influxDBUser = influxDBUser
 	iDB.influxDBPassword = influxDBPassword
+	iDB.appName = appName
+	iDB.version = version
 
 	iDB.client, err = client.NewHTTPClient(client.HTTPConfig{
 		Addr:     iDB.influxDBHost,
@@ -89,6 +93,8 @@ func (iDB *InfluxDB) New(influxDBHost string, influxDBDatabase string, influxDBU
 func (iDB *InfluxDB) AddMetric(name string, tags map[string]string, fields map[string]interface{}) error {
 	hostname, _ := os.Hostname()
 	tags["hostname"] = hostname
+	tags["app"] = iDB.appName
+	tags["version"] = iDB.version
 	pt, err := client.NewPoint(name, tags, fields, time.Now())
 	if err != nil {
 		return err
