@@ -101,6 +101,7 @@ func (socket *SocketTLS) run() {
 					Error: err,
 				},
 			}
+			conn.Close()
 			continue
 		}
 
