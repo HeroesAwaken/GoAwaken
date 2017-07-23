@@ -96,18 +96,18 @@ func (socket *SocketTLS) run() {
 		// Listen for an incoming connection.
 		conn, err := socket.listen.Accept()
 
-		go func() {
-			if err != nil {
-				log.Errorf("%s: A new client connecting threw an error.\n%v", socket.name, err)
-				socket.eventChan <- SocketEvent{
-					Name: "error",
-					Data: EventError{
-						Error: err,
-					},
-				}
-				conn.Close()
+		if err != nil {
+			log.Errorf("%s: A new client connecting threw an error.\n%v", socket.name, err)
+			socket.eventChan <- SocketEvent{
+				Name: "error",
+				Data: EventError{
+					Error: err,
+				},
 			}
+			conn.Close()
+		}
 
+		go func() {
 			tlscon, ok := conn.(*tls.Conn)
 			if !ok {
 				log.Errorf("%s: A new client connecting threw an error.\n%v", socket.name, err)
@@ -119,6 +119,7 @@ func (socket *SocketTLS) run() {
 				}
 				conn.Close()
 			}
+
 			tlscon.SetDeadline(time.Now().Add(time.Second * 10))
 
 			err = tlscon.Handshake()
@@ -135,6 +136,9 @@ func (socket *SocketTLS) run() {
 
 			state := tlscon.ConnectionState()
 			log.Debugf("Connection handshake complete %v, %v", state.HandshakeComplete, state)
+
+			// reset deadline after handshake
+			tlscon.SetDeadline(time.Time{})
 
 			// Create a new Client and add it to our slice
 			newClient := new(ClientTLS)
