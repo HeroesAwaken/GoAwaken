@@ -172,21 +172,28 @@ func (client *Client) readFESL(data []byte) {
 		payloadType := string(payloadTypeRaw)
 
 		binary.Read(p, binary.BigEndian, &payloadId)
-		binary.Read(p, binary.BigEndian, &payloadLen)
+		
+		if binary.Len() < 4 {
+			outcommand.Message = make(map[string]string)
+		} else {
+			binary.Read(p, binary.BigEndian, &payloadLen)
+			
+			payloadRaw := make([]byte, (payloadLen - 11))
+			p.Read(payloadRaw)
 
-		payloadRaw := make([]byte, (payloadLen - 12))
-		p.Read(payloadRaw)
+			payload := ProcessFESL(string(payloadRaw))
 
-		payload := ProcessFESL(string(payloadRaw))
+			outCommand.Message = payload
 
-		outCommand.Query = payloadType
-		outCommand.PayloadID = payloadId
-		outCommand.Message = payload
-
+			outCommand.Query = payloadType
+			outCommand.PayloadID = payloadId
+		}
+		
 		client.eventChan <- ClientEvent{
 			Name: "command." + payloadType,
 			Data: outCommand,
 		}
+		
 		client.eventChan <- ClientEvent{
 			Name: "command",
 			Data: outCommand,
